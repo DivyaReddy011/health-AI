@@ -1,5 +1,5 @@
 streamlit
 pandas
 plotly
-python-dotenv
+requests
 ibm-watson-machine-learning
