@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
-
+import get_ai_response                                    
+import predict_disease, generate_treatment_plan         
+import display_health_analytics 
 
 
 # ---- Page Config ----
