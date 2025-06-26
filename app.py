@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import ai                                  
+from ai import get_ai_response                                
 import  core   
 from visualizer import display_health_analytics 
 
