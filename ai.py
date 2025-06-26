@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("AI_API_KEY")
-WML_URL = os.getenv("AI_URL")
 PROJECT_ID = os.getenv("AI_PROJECT_ID")
+WML_URL = os.getenv("AI_URL")
+
 
 def get_ai_response(prompt):
     token_url = "https://iam.cloud.ibm.com/identity/token"
