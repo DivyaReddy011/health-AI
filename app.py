@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-from utils.core import predict_disease, generate_treatment_plan
-from utils.visualizer import display_health_analytics
+
 
 # ---- Page Config ----
 st.set_page_config(page_title="🧠 HealthAI", layout="wide")
