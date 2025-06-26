@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from ai import get_ai_response                                    
-from core import predict_disease, generate_treatment_plan         
+import ai                                  
+import  core   
 from visualizer import display_health_analytics 
 
 
