@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
-from ai import get_ai_response                                
-import  core   
-from visualizer import display_health_analytics 
-
+from utils.ai import get_ai_response
+from utils.core import predict_disease, generate_treatment_plan
+from utils.visualizer import display_health_analytics
 
 # ---- Page Config ----
 st.set_page_config(page_title="🧠 HealthAI", layout="wide")
@@ -19,36 +18,41 @@ with st.sidebar:
 
 # ---- Session for Patient Profile ----
 if "profile" not in st.session_state:
-    st.session_state.profile = {}
+    st.session_state.profile = {
+        "name": "",
+        "age": 30,
+        "gender": "Male",
+        "history": "",
+        "medications": "",
+        "allergies": ""
+    }
 
 # ---- Left Panel: Patient Profile Form ----
 col1, col2 = st.columns([1, 2])
 
 with col1:
     st.markdown("## 👤 Patient Profile")
-    with st.form("profile_form"):
-        name = st.text_input("Name", st.session_state.profile.get("name", ""))
-        age = st.number_input("Age", min_value=0, max_value=120, step=1, value=st.session_state.profile.get("age", 30))
-        gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.profile.get("gender", "Male")))
-        history = st.text_area("Medical History", st.session_state.profile.get("history", ""))
-        medications = st.text_area("Current Medications", st.session_state.profile.get("medications", ""))
-        allergies = st.text_input("Allergies", st.session_state.profile.get("allergies", ""))
 
-        submitted = st.form_submit_button("💾 Save Profile")
-        if submitted:
-            st.session_state.profile = {
-                "name": name,
-                "age": age,
-                "gender": gender,
-                "history": history,
-                "medications": medications,
-                "allergies": allergies
-            }
-            st.success("✅ Profile saved!")
+    name = st.text_input("Name", st.session_state.profile.get("name", ""))
+    age = st.number_input("Age", min_value=0, max_value=120, step=1, value=st.session_state.profile.get("age", 30))
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], index=["Male", "Female", "Other"].index(st.session_state.profile.get("gender", "Male")))
+    history = st.text_area("Medical History", st.session_state.profile.get("history", ""))
+    medications = st.text_area("Current Medications", st.session_state.profile.get("medications", ""))
+    allergies = st.text_input("Allergies", st.session_state.profile.get("allergies", ""))
 
-    if st.session_state.profile:
-        st.markdown("#### 🧾 Saved Info")
-        st.json(st.session_state.profile)
+    # Auto-update session profile without save button
+    st.session_state.profile = {
+        "name": name,
+        "age": age,
+        "gender": gender,
+        "history": history,
+        "medications": medications,
+        "allergies": allergies
+    }
+
+    # Profile summary hidden from UI
+    # st.markdown("#### 🧾 Profile Summary")
+    # st.json(st.session_state.profile)
 
 # ---- Right Panel: Functional Modules ----
 with col2:
@@ -63,7 +67,6 @@ with col2:
     - Allergies: {profile.get('allergies')}
     """
 
-    # ---- Patient Chat ----
     if menu == "🏥 Patient Chat":
         st.subheader("💬 Patient Chat Assistant")
         user_input = st.text_area("📝 Ask a medical question:")
@@ -77,7 +80,6 @@ with col2:
             else:
                 st.warning("❗ Please enter a question.")
 
-    # ---- Disease Prediction ----
     elif menu == "🔍 Disease Prediction":
         st.subheader("🧾 Disease Prediction Based on Symptoms & Profile")
         symptoms = st.text_input("🔬 Enter symptoms (comma-separated):")
@@ -91,7 +93,6 @@ with col2:
             else:
                 st.warning("❗ Please enter symptoms.")
 
-    # ---- Treatment Plan ----
     elif menu == "💊 Treatment Plan":
         st.subheader("📋 Generate Personalized Treatment Plan")
         disease = st.text_input("🏷️ Enter diagnosed condition:")
@@ -105,22 +106,37 @@ with col2:
             else:
                 st.warning("❗ Enter a condition to continue.")
 
-    # ---- Health Analytics ----
     elif menu == "📈 Health Analytics":
         st.subheader("📊 Patient Health Analytics")
 
-        try:
-            df = pd.read_csv("data/patient_data.csv")
-            metric = st.selectbox("📌 Select a metric to visualize", df.columns[1:])
-            st.line_chart(df.set_index(df.columns[0])[metric])
+        uploaded_file = st.file_uploader("📁 Upload patient health data (.csv)", type=["csv"])
 
-            if st.button("🧠 Generate AI Insight"):
-                summary = df[metric].describe().to_string()
-                prompt = f"Given the patient's profile:\n{profile_summary}\n\nAnd health data summary:\n{summary}\n\nProvide analysis and health advice."
-                ai_insight = get_ai_response(prompt)
-                st.info(ai_insight)
-        except FileNotFoundError:
-            st.error("❌ `data/patient_data.csv` not found.")
+        if uploaded_file is not None:
+            try:
+                df = pd.read_csv(uploaded_file)
+                metric = st.selectbox("📌 Select a metric to visualize", df.columns[1:])
+                st.line_chart(df.set_index(df.columns[0])[metric])
+
+                if st.button("🧠 Generate AI Insight"):
+                    last_row = df.iloc[-1]
+                    metric_lines = "\n".join([f"- {col}: {last_row[col]}" for col in df.columns[1:]])
+
+                    prompt = f"""You are a health assistant. Based on this patient profile:
+
+{profile_summary}
+
+And the latest health metric readings:
+{metric_lines}
+
+Give a brief line-by-line interpretation for each value, and suggest any important health advice."""
+
+                    ai_insight = get_ai_response(prompt)
+                    st.info(ai_insight)
+
+            except Exception as e:
+                st.error(f"❌ Error reading file: {e}")
+        else:
+            st.warning("📂 Please upload a CSV file to analyze patient metrics.")
 
 # ---- Footer ----
 st.markdown("<hr>", unsafe_allow_html=True)
